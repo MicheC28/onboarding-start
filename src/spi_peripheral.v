@@ -49,8 +49,8 @@ reg [4:0] bit_count;
 
 always_ff @(posedge clk) begin
     cdc_sclk <= {cdc_sclk[0], sclk};
-    cdc_ncs <= {cdc_ncs[0], ncs};
-    cdc_copi <= {cdc_copi[0], COPI};
+        cdc_ncs <= {cdc_ncs[0], ncs};
+        cdc_copi <= {cdc_copi[0], COPI};
 end
 
 
@@ -71,26 +71,20 @@ always_ff @(posedge clk or negedge rst_n)begin
         cdc_ncs <= 2'b11;
         cdc_copi <= 2'b00;
     end
-end
-
-always_ff @(posedge clk) begin
-
-    if(sclk_rising_edge && !cdc_ncs[1])begin
-    if( bit_count < 16) begin
-        shift_reg <= {shift_reg[14:0], cdc_copi[1]};  // Left shift, new bit at LSB
-        bit_count <= bit_count + 1;
-    end
-
     else begin
-        shift_reg <= shift_reg; 
-        bit_count <= bit_count;
-    end
-    end
-end
+        if(sclk_rising_edge && !cdc_ncs[1]) begin
+            if( bit_count < 16) begin
+                shift_reg <= {shift_reg[14:0], cdc_copi[1]};  // Left shift, new bit at LSB
+                bit_count <= bit_count + 1;
+            end
 
+            else begin
+                shift_reg <= shift_reg; 
+                bit_count <= bit_count;
+            end
+        end 
 
-always_ff @(posedge clk) begin
-    if(ncs_rising_edge && bit_count == 16 && shift_reg[15] == 1) begin
+        else if(ncs_rising_edge && bit_count == 16 && shift_reg[15] == 1) begin
 
         case(shift_reg[14:8])
             7'b0000000: begin
@@ -117,10 +111,18 @@ always_ff @(posedge clk) begin
             end
         endcase
 
-        bit_count <= 'd0; // reset bit count for next transaction
+        bit_count <= 'd0; // reset bit count for next transaction     
+        end
 
-     
+        cdc_sclk <= {cdc_sclk[0], sclk};
+        cdc_ncs <= {cdc_ncs[0], ncs};
+        cdc_copi <= {cdc_copi[0], COPI};
     end
+end
+
+
+always_ff @(posedge clk) begin
+    
 end
 
 
