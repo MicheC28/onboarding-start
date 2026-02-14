@@ -35,11 +35,25 @@ module spi_peripheral (
     output reg [7:0] pwm_duty_cycle
 );
 
-//shift register to take in 16 bit serial 
-// update reg accordingly
+// n -> cdc[0] -> cdc[1] -> ...
+
+reg [1:0] cdc_sclk;
+reg [1:0] cdc_ncs;
+reg [1:0] cdc_copi;
+
+wire sclk_rising_edge = (cdc_sclk[1] == 0) && (cdc_sclk[0] == 1);
+wire ncs_rising_edge = (cdc_ncs[1] == 0) && (cdc_ncs[0] == 1);
 
 reg [15:0] shift_reg;
 reg [4:0] bit_count;
+
+always_ff @(posedge clk) begin
+    cdc_sclk <= {cdc_sclk[0], sclk};
+    cdc_ncs <= {cdc_ncs[0], ncs};
+    cdc_copi <= {cdc_copi[0], COPI};
+end
+
+
 
 always_ff @(posedge clk)begin
     if(rst_n == 0) begin
@@ -52,12 +66,18 @@ always_ff @(posedge clk)begin
 
         bit_count <= 'd0;
         shift_reg <= 'd0;
+
+        cdc_sclk <= 2'b00;
+        cdc_ncs <= 2'b11;
+        cdc_copi <= 2'b00;
     end
 end
 
-always_ff @(posedge sclk) begin
-    if(!ncs && bit_count < 16) begin
-        shift_reg <= {shift_reg[14:0], COPI};  // Left shift, new bit at LSB
+always_ff @(posedge clk) begin
+
+    if(sclk_rising_edge && !cdc_ncs[1])begin
+    if( bit_count < 16) begin
+        shift_reg <= {shift_reg[14:0], cdc_copi[1]};  // Left shift, new bit at LSB
         bit_count <= bit_count + 1;
     end
 
@@ -65,11 +85,12 @@ always_ff @(posedge sclk) begin
         shift_reg <= shift_reg; 
         bit_count <= bit_count;
     end
+    end
 end
 
 
-always_ff @(negedge sclk) begin
-    if(ncs == 1 && bit_count == 16 && shift_reg[15] == 1) begin
+always_ff @(posedge clk) begin
+    if(ncs_rising_edge && bit_count == 16 && shift_reg[15] == 1) begin
 
         case(shift_reg[14:8])
             7'b0000000: begin
