@@ -42,7 +42,7 @@ reg [15:0] shift_reg;
 reg [3:0] bit_count;
 
 always_ff @(posedge clk)begin
-    if(!rst_n) begin
+    if(rst_n == 0) begin
         
         en_out_uo <= 'd0;
         en_out_uio <= 'd0;
@@ -73,24 +73,24 @@ always_ff @(posedge ncs) begin
         //check valid address
         //may have to flip order
 
-        case(shift_reg[14:12])
-            3'b000: begin
+        case(shift_reg[14:7])
+            2'h00: begin
                 en_out_uo <= shift_reg[7:0];
             end
 
-            3'b001: begin
+            2'h01: begin
                 en_out_uio <= shift_reg[7:0];
             end
 
-            3'b010: begin
+            2'h02: begin
                 en_pwm_uo <= shift_reg[7:0];
             end
 
-            3'b011: begin
+            2'h03: begin
                 en_pwm_uio <= shift_reg[7:0];
             end
 
-            3'b100: begin
+            2'h04: begin
                 pwm_duty_cycle <= shift_reg[7:0];
             end
 
