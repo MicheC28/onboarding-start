@@ -31,7 +31,7 @@ module tt_um_uwasic_onboarding_Michelle_Chen (
   wire [7:0] pwm_duty_cycle;
 
   // Add uio_in and ui_in[7:3] to the list of unused signals:
-  wire _unused = &{ena, ui_in[7:3], uio_in, 1'b0};
+  wire _unused2 = &{ena, ui_in[7:3], uio_in, 1'b0};
 
   // Instantiate the PWM module
   pwm_peripheral pwm_peripheral_inst (
