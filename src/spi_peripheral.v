@@ -47,14 +47,6 @@ wire ncs_rising_edge = (cdc_ncs[1] == 0) && (cdc_ncs[0] == 1);
 reg [15:0] shift_reg;
 reg [4:0] bit_count;
 
-always_ff @(posedge clk) begin
-    cdc_sclk <= {cdc_sclk[0], sclk};
-        cdc_ncs <= {cdc_ncs[0], ncs};
-        cdc_copi <= {cdc_copi[0], COPI};
-end
-
-
-
 always_ff @(posedge clk or negedge rst_n)begin
     if(rst_n == 0) begin
         
