@@ -55,7 +55,7 @@ end
 
 
 
-always_ff @(posedge clk)begin
+always_ff @(posedge clk or negedge rst_n)begin
     if(rst_n == 0) begin
         
         en_out_uo <= 'd0;
