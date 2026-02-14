@@ -39,7 +39,7 @@ module spi_peripheral (
 // update reg accordingly
 
 reg [15:0] shift_reg;
-reg [3:0] bit_count;
+reg [4:0] bit_count;
 
 always_ff @(posedge clk)begin
     if(rst_n == 0) begin
