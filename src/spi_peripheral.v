@@ -68,29 +68,27 @@ always_ff @(posedge sclk) begin
 end
 
 
-always_ff @(posedge ncs) begin
-    if(bit_count == 16 && shift_reg[15] == 1) begin
-        //check valid address
-        //may have to flip order
+always_ff @(negedge sclk) begin
+    if(ncs == 1 && bit_count == 16 && shift_reg[15] == 1) begin
 
-        case(shift_reg[10:8])
-            3'b000: begin
+        case(shift_reg[14:8])
+            7'b0000000: begin
                 en_out_uo <= shift_reg[7:0];
             end
 
-            3'b001: begin
+            7'b0000001: begin
                 en_out_uio <= shift_reg[7:0];
             end
 
-            3'b010: begin
+            7'b0000010: begin
                 en_pwm_uo <= shift_reg[7:0];
             end
 
-            3'b011: begin
+            7'b0000011: begin
                 en_pwm_uio <= shift_reg[7:0];
             end
 
-            3'b100: begin
+            7'b0000100: begin
                 pwm_duty_cycle <= shift_reg[7:0];
             end
 
