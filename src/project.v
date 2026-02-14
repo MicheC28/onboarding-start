@@ -45,5 +45,19 @@ module tt_um_uwasic_onboarding_Michelle_Chen (
     .out({uio_out, uo_out})
   );
 
+  // Instatiate SPI module
+  spi_peripheral spi_peripheral_inst (
+    .clk(clk),
+    .sclk(ui_in[0]),
+    .rst_n(rst_n),
+    .ncs(ui_in[2]),  
+    .COPI(ui_in[1]), 
+
+    .en_out_uo(en_reg_out_7_0),
+    .en_out_uio(en_reg_out_15_8),
+    .en_pwm_uo(en_reg_pwm_7_0),
+    .en_pwm_uio(en_reg_pwm_15_8),
+    .pwm_duty_cycle(pwm_duty_cycle)
+  );
 
 endmodule
