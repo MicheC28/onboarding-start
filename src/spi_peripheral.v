@@ -73,24 +73,24 @@ always_ff @(posedge ncs) begin
         //check valid address
         //may have to flip order
 
-        case(shift_reg[14:7])
-            2'h00: begin
+        case(shift_reg[10:8])
+            3'b000: begin
                 en_out_uo <= shift_reg[7:0];
             end
 
-            2'h01: begin
+            3'b001: begin
                 en_out_uio <= shift_reg[7:0];
             end
 
-            2'h02: begin
+            3'b010: begin
                 en_pwm_uo <= shift_reg[7:0];
             end
 
-            2'h03: begin
+            3'b011: begin
                 en_pwm_uio <= shift_reg[7:0];
             end
 
-            2'h04: begin
+            3'b100: begin
                 pwm_duty_cycle <= shift_reg[7:0];
             end
 
