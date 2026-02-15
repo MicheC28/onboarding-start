@@ -29,9 +29,9 @@ module spi_peripheral (
     input wire COPI,
 
     output reg [7:0] en_out_uo,
-    output reg [15:8] en_out_uio,
+    output reg [7:0] en_out_uio,
     output reg [7:0] en_pwm_uo,
-    output reg [15:8] en_pwm_uio,
+    output reg [7:0] en_pwm_uio,
     output reg [7:0] pwm_duty_cycle
 );
 
@@ -47,7 +47,7 @@ wire ncs_rising_edge = (cdc_ncs[1] == 0) && (cdc_ncs[0] == 1);
 reg [15:0] shift_reg;
 reg [4:0] bit_count;
 
-always_ff @(posedge clk or negedge rst_n)begin
+always @(posedge clk or negedge rst_n)begin
     if(rst_n == 0) begin
         
         en_out_uo <= 'd0;
@@ -111,15 +111,5 @@ always_ff @(posedge clk or negedge rst_n)begin
         cdc_copi <= {cdc_copi[0], COPI};
     end
 end
-
-
-always_ff @(posedge clk) begin
-    
-end
-
-
-
-
-
 
 endmodule
