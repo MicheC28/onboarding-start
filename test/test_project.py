@@ -325,11 +325,11 @@ async def test_pwm_duty(dut):
 
                         if(not periodStart[i] and currentPWM[i] == 1 and prevPWM[i] == 0):
                             periodStart[i] = True
-                            t_rising_1[i] = cocotb.utils.get_sim_time(unit="ns")
+                            t_rising_1[i] = cocotb.utils.get_sim_time(units="ns")
                         elif(periodStart[i] and currentPWM[i] == 0 and prevPWM[i] == 1):
-                            t_falling[i] = cocotb.utils.get_sim_time(unit="ns")
+                            t_falling[i] = cocotb.utils.get_sim_time(units="ns")
                         elif(periodStart[i] and currentPWM[i] == 1 and prevPWM[i] == 0):
-                            t_rising_2[i] = cocotb.utils.get_sim_time(unit="ns")
+                            t_rising_2[i] = cocotb.utils.get_sim_time(units="ns")
 
                             duty_cycle_measured = (t_falling[i] - t_rising_1[i]) / (t_rising_2[i] - t_rising_1[i])
                             assert abs(duty_cycle_measured - (duty / 100)) < 0.05, f"Expected duty cycle around {duty}%, got {duty_cycle_measured * 100}% for channel {i}"
