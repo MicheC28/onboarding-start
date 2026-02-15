@@ -152,8 +152,90 @@ async def test_spi(dut):
 @cocotb.test()
 async def test_pwm_freq(dut):
     # Write your test here
-    dut._log.info("PWM Frequency test completed successfully")
+    dut._log.info("Start PWM Frequency test")
 
+    # Set the clock period to 100 ns (10 MHz)
+    clock = Clock(dut.clk, 100, units="ns")
+    cocotb.start_soon(clock.start())
+
+    # Reset
+    dut._log.info("Reset")
+    dut.ena.value = 1
+    ncs = 1
+    bit = 0
+    sclk = 0
+    dut.ui_in.value = ui_in_logicarray(ncs, bit, sclk)
+    dut.rst_n.value = 0
+    await ClockCycles(dut.clk, 5)
+    dut.rst_n.value = 1
+    await ClockCycles(dut.clk, 5)
+
+    dut._log.info("Enable all PWM channels")
+    ui_in_val = await send_spi_transaction(dut, 1, 0x00, 0xFF)
+    ui_in_val = await send_spi_transaction(dut, 1, 0x01, 0xFF)
+    dut._log.info("Set PWM mode to 1 for all channels")
+    ui_in_val = await send_spi_transaction(dut, 1, 0x02, 0xFF)
+    ui_in_val = await send_spi_transaction(dut, 1, 0x03, 0xFF)
+    dut._log.info("Set PWM duty cycle to 50%")
+    ui_in_val = await send_spi_transaction(dut, 1, 0x04, 128)  # 50% duty cycle
+
+
+    periodFound = [False] * 16
+    periodStart = [False] * 16
+
+    currentPWM = [0] * 16
+    prevPWM = [0] * 16
+
+    for i in range(16):
+        currentPWM[i] = getPWMValue(dut, i)
+
+    await ClockCycles(dut.clk, 1)
+
+    for i in range(16):
+        prevPWM[i] = currentPWM[i]
+        currentPWM[i] = getPWMValue(dut, i)
+
+    t1 = [0] * 16
+    t2 = [0] * 16
+
+    while(not all(periodFound)):
+
+        for i in range(16):
+
+            if(not periodFound[i]):
+
+                prevPWM[i] = currentPWM[i]
+                currentPWM[i] = getPWMValue(dut, i)
+
+                if not periodStart[i] and currentPWM[i] == 1 and prevPWM[i] == 0:
+                    periodStart[i] = True
+                    dut._log.info(f"PWM period started for channel {i}")
+
+                    t1[i] = cocotb.utils.get_sim_time(units="ns")
+                elif periodStart[i] and currentPWM[i] == 1 and prevPWM[i] == 0:
+                    periodFound[i] = True
+                    t2[i] = cocotb.utils.get_sim_time(units="ns")
+                    dut._log.info(f"PWM period ended for channel {i}. Duration: {t2[i] - t1[i]} ns")
+                    break
+
+        await ClockCycles(dut.clk, 1)
+   
+    for i in range(16):
+        if periodFound[i]:
+            freq = 1 / ((t2[i] - t1[i]) * 1e-9)  
+            assert abs(freq - 3000) < 30, f"Expected frequency around 3000 Hz for channel {i}, got {freq} Hz"
+            dut._log.info(f"PWM Frequency test completed successfully for channel {i}") 
+        else:
+            dut._log.error("Failed to find a complete PWM period")
+    
+
+def getPWMValue(dut, index):
+    if index >= 0 and index <= 7:
+        result =(dut.uo_out.value.integer >> index) & 0x1
+    elif index >= 8 and index <= 15:
+        result =(dut.uio_out.value.integer >> (index - 8)) & 0x1
+    return result
+   
 
 @cocotb.test()
 async def test_pwm_duty(dut):
