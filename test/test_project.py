@@ -239,5 +239,104 @@ def getPWMValue(dut, index):
 
 @cocotb.test()
 async def test_pwm_duty(dut):
-    # Write your test here
+    dut._log.info("Start PWM Duty Cycle test")
+
+    # Set the clock period to 100 ns (10 MHz)
+    clock = Clock(dut.clk, 100, units="ns")
+    cocotb.start_soon(clock.start())
+
+    # Reset
+    dut._log.info("Reset")
+    dut.ena.value = 1
+    ncs = 1
+    bit = 0
+    sclk = 0
+    dut.ui_in.value = ui_in_logicarray(ncs, bit, sclk)
+    dut.rst_n.value = 0
+    await ClockCycles(dut.clk, 5)
+    dut.rst_n.value = 1
+    await ClockCycles(dut.clk, 5)
+
+    dut._log.info("Enable all PWM channels")
+    ui_in_val = await send_spi_transaction(dut, 1, 0x00, 0xFF)
+    ui_in_val = await send_spi_transaction(dut, 1, 0x01, 0xFF)
+    dut._log.info("Set PWM mode to 1 for all channels")
+    ui_in_val = await send_spi_transaction(dut, 1, 0x02, 0xFF)
+    ui_in_val = await send_spi_transaction(dut, 1, 0x03, 0xFF)
+    
+    duty_cycles = [0, 25, 50, 75, 100]
+
+    currentPWM = [0] * 16
+    prevPWM = [0] * 16
+
+    for duty in duty_cycles:
+
+        dut._log.info(f"Set PWM duty cycle to {duty}%")
+        duty_value = int((duty / 100) * 255)
+        ui_in_val = await send_spi_transaction(dut, 1, 0x04, duty_value)  # Set duty cycle
+
+        await ClockCycles(dut.clk, 5)
+
+        if(duty == 0):
+            num_cycles = (1 / 2970) * 1e7
+
+            for i in range(int(num_cycles)):
+                for j in range(16):
+                    currentPWM[j] = getPWMValue(dut, j)
+
+                assert all(pwm == 0 for pwm in currentPWM), f"Expected all PWM channels to be low for 0% duty cycle, but got {currentPWM}"
+                await ClockCycles(dut.clk, 1)
+            
+            dut._log.info("PWM Duty Cycle test completed successfully for 0% duty cycle")
+        
+        elif(duty == 100):
+            num_cycles = (1 / 2970) * 1e7
+
+            for i in range(int(num_cycles)):
+                for j in range(16):
+                    currentPWM[j] = getPWMValue(dut, j)
+
+                assert all(pwm == 1 for pwm in currentPWM), f"Expected all PWM channels to be high for 100% duty cycle, but got {currentPWM}"
+                await ClockCycles(dut.clk, 1)
+        
+            dut._log.info("PWM Duty Cycle test completed successfully for 100% duty cycle")
+        
+        else:
+            for i in range(16):
+                currentPWM[i] = getPWMValue(dut, i)
+            await ClockCycles(dut.clk, 1)
+            for i in range(16):
+                prevPWM[i] = currentPWM[i]
+                currentPWM[i] = getPWMValue(dut, i)
+
+            t_falling = [0] * 16
+            t_rising_1 = [0] * 16
+            t_rising_2 = [0] * 16
+
+            dutyFound = [False] * 16
+            periodStart = [False] * 16
+
+            while(not all(dutyFound)):
+
+                for i in range(16):
+                    if(not dutyFound[i]):
+                        prevPWM[i] = currentPWM[i]
+                        currentPWM[i] = getPWMValue(dut, i)
+
+                        if(not periodStart[i] and currentPWM[i] == 1 and prevPWM[i] == 0):
+                            periodStart[i] = True
+                            t_rising_1[i] = cocotb.utils.get_sim_time(unit="ns")
+                        elif(periodStart[i] and currentPWM[i] == 0 and prevPWM[i] == 1):
+                            t_falling[i] = cocotb.utils.get_sim_time(unit="ns")
+                        elif(periodStart[i] and currentPWM[i] == 1 and prevPWM[i] == 0):
+                            t_rising_2[i] = cocotb.utils.get_sim_time(unit="ns")
+
+                            duty_cycle_measured = (t_falling[i] - t_rising_1[i]) / (t_rising_2[i] - t_rising_1[i])
+                            assert abs(duty_cycle_measured - (duty / 100)) < 0.05, f"Expected duty cycle around {duty}%, got {duty_cycle_measured * 100}% for channel {i}"
+                            dutyFound[i] = True
+                            dut._log.info(f"PWM Duty Cycle test completed successfully for channel {i} with duty cycle {duty}%")
+                            break
+
+                await ClockCycles(dut.clk, 1)
+        
     dut._log.info("PWM Duty Cycle test completed successfully")
